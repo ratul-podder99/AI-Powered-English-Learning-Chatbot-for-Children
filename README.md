@@ -9,7 +9,6 @@ behind a hard timeout.
 - **Live URL:** (https://english-buddy-7tgg.onrender.com)
 - **Architecture diagram:** [`docs/architecture.svg`](docs/architecture.svg) (Mermaid version in [`docs/SYSTEM_DESIGN.md`](docs/SYSTEM_DESIGN.md))
 - **System design:** [`docs/SYSTEM_DESIGN.md`](docs/SYSTEM_DESIGN.md)
-- **Video script (2 min):** [`docs/VIDEO_SCRIPT.md`](docs/VIDEO_SCRIPT.md)
 
 ## Features vs. requirements
 
