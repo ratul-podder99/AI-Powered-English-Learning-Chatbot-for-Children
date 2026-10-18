@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ollie the Owl - English Buddy</title>
+<style>
+  :root{--bg:#fff7e6;--card:#ffffff;--ink:#3b2a14;--accent:#ff8a3d;--accent2:#4cc38a;--bot:#ffe9c7;--me:#d6f5e6;--radius:22px}
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{font-family:"Comic Sans MS","Baloo 2","Trebuchet MS",system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;justify-content:center}
+  .app{width:100%;max-width:640px;height:100%;display:flex;flex-direction:column;padding:12px;gap:10px}
+  header{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:var(--radius);padding:10px 14px;box-shadow:0 3px 0 rgba(0,0,0,.08)}
+  #mascot{font-size:44px;line-height:1;transition:transform .2s}
+  #mascot.bounce{transform:scale(1.25) rotate(-8deg)}
+  .title{font-weight:700;font-size:18px}
+  .sub{font-size:13px;opacity:.75}
+  .meter{flex:1}
+  .bar{height:12px;background:#f1e3c8;border-radius:99px;overflow:hidden;margin-top:6px}
+  .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent2),#8be3b6);transition:width .4s}
+  #stars{font-size:16px;white-space:nowrap}
+  #log{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:6px 2px}
+  .msg{max-width:88%;padding:12px 16px;border-radius:var(--radius);font-size:20px;line-height:1.35;white-space:pre-wrap;animation:pop .2s ease-out}
+  .bot{background:var(--bot);align-self:flex-start;border-bottom-left-radius:6px}
+  .me{background:var(--me);align-self:flex-end;border-bottom-right-radius:6px}
+  .big{font-size:56px;display:block;margin-bottom:4px}
+  .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;background:#fff;opacity:.8;margin-bottom:4px}
+  .quick{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;min-height:8px}
+  .quick button{font:inherit;font-size:19px;padding:12px 18px;border:0;border-radius:99px;background:var(--accent);color:#fff;cursor:pointer;box-shadow:0 4px 0 #c9631a;min-height:52px}
+  .quick button:active{transform:translateY(3px);box-shadow:0 1px 0 #c9631a}
+  form{display:flex;gap:8px}
+  input{flex:1;font:inherit;font-size:20px;padding:14px 16px;border-radius:99px;border:3px solid #f0d9b0;outline:none;background:#fff}
+  input:focus{border-color:var(--accent)}
+  .icon{font:inherit;font-size:24px;width:56px;border:0;border-radius:50%;background:var(--accent2);color:#fff;cursor:pointer}
+  .icon.off{background:#c8c8c8}
+  .typing{opacity:.6}
+  footer{font-size:11px;text-align:center;opacity:.6}
+  @keyframes pop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+  @media (prefers-reduced-motion:reduce){.msg{animation:none}#mascot{transition:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div id="mascot" aria-hidden="true">🦉</div>
+    <div class="meter">
+      <div class="title">Ollie the Owl <span id="lvl" class="sub"></span></div>
+      <div class="bar" aria-label="Level progress"><i id="prog"></i></div>
+    </div>
+    <div id="stars" aria-label="Stars">⭐ 0</div>
+    <button id="mute" class="icon" type="button" title="Sound on/off" aria-label="Toggle sound">🔊</button>
+  </header>
+
+  <main id="log" aria-live="polite"></main>
+  <div id="quick" class="quick"></div>
+
+  <form id="form" autocomplete="off">
+    <input id="text" placeholder="Type or tap the microphone…" maxlength="300" aria-label="Your message">
+    <button id="mic" class="icon" type="button" title="Talk" aria-label="Speak">🎤</button>
+    <button class="icon" type="submit" aria-label="Send" style="background:var(--accent)">➡️</button>
+  </form>
+  <footer>Made for kids under 7. Grown-ups: progress is at <code>/api/session/&lt;id&gt;</code></footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const log = $('log'), quick = $('quick'), input = $('text');
+let sid = null, muted = false, idleTimer = null, busy = false;
+try { sid = localStorage.getItem('sid'); } catch(e){}
+if (!sid) { sid = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)+Date.now()).replace(/-/g,''); try{localStorage.setItem('sid',sid);}catch(e){} }
+
+function add(text, who, emoji, mode){
+  const d = document.createElement('div'); d.className = 'msg ' + who;
+  if (who==='bot'){
+    if (emoji){ const b=document.createElement('span'); b.className='big'; b.textContent=emoji; d.appendChild(b); }
+    if (mode){ const t=document.createElement('span'); t.className='tag'; t.textContent={learn:'📚 learning',converse:'💬 chatting',engage:'🎈 fun time',support:'💛 feelings'}[mode]||mode; d.appendChild(t); d.appendChild(document.createElement('br')); }
+  }
+  d.appendChild(document.createTextNode(text));
+  log.appendChild(d); log.scrollTop = log.scrollHeight; return d;
+}
+function speak(t){
+  if (muted || !('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(t); u.lang='en-US'; u.rate=.8; u.pitch=1.25; speechSynthesis.speak(u);
+}
+function renderQuick(list){
+  quick.innerHTML='';
+  (list||[]).forEach(q=>{ const b=document.createElement('button'); b.type='button'; b.textContent=q; b.onclick=()=>send(q); quick.appendChild(b); });
+}
+function update(r){
+  $('lvl').textContent = '· Level '+r.level+' '+r.level_name;
+  $('stars').textContent = '⭐ '+r.stars;
+  $('prog').style.width = Math.min(100, r.progress.correct / r.progress.target * 100) + '%';
+  $('mascot').textContent = r.mode==='support' ? '🦉💛' : '🦉';
+  $('mascot').classList.add('bounce'); setTimeout(()=>$('mascot').classList.remove('bounce'),250);
+}
+async function call(payload){
+  const typing = add('…','bot'); typing.classList.add('typing');
+  busy = true;
+  try{
+    const res = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:sid,...payload})});
+    const r = await res.json(); typing.remove();
+    sid = r.session_id; try{localStorage.setItem('sid',sid);}catch(e){}
+    add(r.reply,'bot',r.emoji,r.mode); update(r); renderQuick(r.quick_replies); speak(r.speak);
+  }catch(e){ typing.remove(); add('Oops! I lost my connection. Try again! 🦉','bot'); }
+  busy = false; armIdle();
+}
+function send(text){
+  if (busy || !text.trim()) return;
+  add(text,'me'); input.value=''; quick.innerHTML=''; call({message:text});
+}
+function armIdle(){ clearTimeout(idleTimer); idleTimer=setTimeout(()=>{ if(!busy) call({idle:true,message:''}); }, 45000); }
+
+$('form').addEventListener('submit', e=>{ e.preventDefault(); send(input.value); });
+$('mute').onclick = ()=>{ muted=!muted; $('mute').textContent=muted?'🔇':'🔊'; $('mute').classList.toggle('off',muted); if(muted) speechSynthesis.cancel(); };
+
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SR){
+  const rec = new SR(); rec.lang='en-US'; rec.interimResults=false; rec.maxAlternatives=1;
+  $('mic').onclick = ()=>{ try{ speechSynthesis.cancel(); rec.start(); $('mic').textContent='👂'; }catch(e){} };
+  rec.onresult = ev => { send(ev.results[0][0].transcript); };
+  rec.onend = ()=>{ $('mic').textContent='🎤'; };
+} else { $('mic').style.display='none'; }
+
+call({start:true});
+</script>
+</body>
+</html>

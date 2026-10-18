@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: english-buddy
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: ANTHROPIC_API_KEY   # optional: enables LLM for open-ended chat
+        sync: false
+      - key: LLM_MODEL
+        value: claude-haiku-5-5
+      - key: LLM_TIMEOUT
+        value: "1.3"
