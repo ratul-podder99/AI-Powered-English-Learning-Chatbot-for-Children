@@ -6,7 +6,7 @@ drilling non-stop. Responses are rule-driven and take **~1-3 ms of server time**
 latency stays far below the 2 s requirement. An optional LLM (Claude) is used *only* for open-ended chat,
 behind a hard timeout.
 
-- **Live URL:** `<paste your deployed URL here>`
+- **Live URL:** (https://english-buddy-7tgg.onrender.com)
 - **Architecture diagram:** [`docs/architecture.svg`](docs/architecture.svg) (Mermaid version in [`docs/SYSTEM_DESIGN.md`](docs/SYSTEM_DESIGN.md))
 - **System design:** [`docs/SYSTEM_DESIGN.md`](docs/SYSTEM_DESIGN.md)
 - **Video script (2 min):** [`docs/VIDEO_SCRIPT.md`](docs/VIDEO_SCRIPT.md)
